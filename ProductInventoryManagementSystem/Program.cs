@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -56,7 +57,10 @@ namespace ProductInventoryManagementSystem
             //Seed
             builder.Services.AddTransient<Seed>();
             //DataContext
-            builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddDbContext<DataContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+         sqlServerOptions => sqlServerOptions.EnableRetryOnFailure())
+ );
             //JWT
             builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
             {
@@ -99,7 +103,7 @@ namespace ProductInventoryManagementSystem
             {
                 option.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "API V1",
+                    Title = "ProductInventoryManagementSystem API V1",
                     Version = "v1"
                 });
                 option.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "ProductInventoryManagementSystem.xml"));
@@ -145,11 +149,17 @@ namespace ProductInventoryManagementSystem
             }
             
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+           
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "ProductIventoryManagementSystem API");
+                options.RoutePrefix = "swagger"; // Ensures Swagger UI loads at /swagger
+            });
+            // Ensure static files are served
+            app.UseStaticFiles();
+
+
             app.UseExceptionHandler(_ => { });
 
             app.UseIpRateLimiting();
@@ -166,6 +176,8 @@ namespace ProductInventoryManagementSystem
             app.MapControllers();
 
             app.Run();
+
+            //192.168.0.6
         }
     }
 }
